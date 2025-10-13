@@ -107,7 +107,7 @@ func (h *AlbumHandler) UpdateAlbum(c *gin.Context) {
 		return
 	}
 
-	album, err := h.albumService.UpdateAlbumMetadata(c.Request.Context(), userID.(uint64), uint64(id), req.Metadata)
+	album, err := h.albumService.UpdateAlbumInfo(c.Request.Context(), userID.(uint64), uint64(id), req.Metadata)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -128,8 +128,7 @@ func (h *AlbumHandler) DeleteAlbum(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	err = h.albumService.DeleteAlbum(c.Request.Context(), userID.(uint64), uint64(id))
-	if err != nil {
+	if err = h.albumService.DeleteAlbum(c.Request.Context(), userID.(uint64), uint64(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

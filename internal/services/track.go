@@ -136,7 +136,7 @@ func (t *TrackService) DeleteTrack(ctx context.Context, userID, trackID uint64) 
 		return fmt.Errorf("unauthorized: you don't own this track's album")
 	}
 
-	if err := t.trackRepository.Delete(ctx, trackID); err != nil {
+	if err = t.trackRepository.Delete(ctx, trackID); err != nil {
 		return fmt.Errorf("failed to delete track: %w", err)
 	}
 	return nil

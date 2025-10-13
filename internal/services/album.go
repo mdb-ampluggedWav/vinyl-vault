@@ -79,7 +79,7 @@ func (a *AlbumService) IsOwner(ctx context.Context, albumID, userID uint64) (boo
 	return album.UserID == userID, nil
 }
 
-func (a *AlbumService) UpdateAlbumMetadata(ctx context.Context, userID, albumID uint64, metadata pkg.Metadata) (*Album, error) {
+func (a *AlbumService) UpdateAlbumInfo(ctx context.Context, userID, albumID uint64, metadata pkg.Metadata) (*Album, error) {
 
 	album, err := a.albumRepository.FindByID(ctx, albumID)
 	if err != nil {

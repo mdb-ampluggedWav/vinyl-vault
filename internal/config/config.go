@@ -2,12 +2,6 @@ package config
 
 import "os"
 
-const (
-	UploadDir   = "./uploads"
-	CoverArtDir = "./uploads/covers"
-	AudioDir    = "./uploads/audio"
-)
-
 type Config struct {
 	DatabaseURL string
 	Port        string

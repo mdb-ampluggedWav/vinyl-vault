@@ -29,27 +29,6 @@ func (b Bitrate) Kbps() int {
 	}
 }
 
-type PlayMode int
-
-const (
-	PlayModeStopped PlayMode = iota
-	PlayModePlaying
-	PlayModePaused
-)
-
-func (pm PlayMode) String() string {
-	switch pm {
-	case PlayModePlaying:
-		return "playing"
-	case PlayModePaused:
-		return "paused"
-	case PlayModeStopped:
-		return "stopped"
-	default:
-		return "unknown"
-	}
-}
-
 type Compression int
 
 const (

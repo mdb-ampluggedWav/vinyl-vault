@@ -4,7 +4,7 @@ import "fmt"
 
 func main() {
 
-	fmt.Println("hello")
+	fmt.Println(500 << 11)
 
 	/*
 		TODO:

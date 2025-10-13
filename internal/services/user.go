@@ -14,6 +14,7 @@ type User struct {
 	ID           uint64    `json:"id" gorm:"primaryKey;autoIncrement"`
 	Username     string    `json:"username" gorm:"uniqueIndex;not null"`
 	Email        string    `json:"email" gorm:"uniqueIndex;not null"`
+	IsAdmin      bool      `json:"is_admin" gorm:"default:false"`
 	PasswordHash string    `json:"-" gorm:"not null"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
