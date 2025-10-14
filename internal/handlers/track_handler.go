@@ -10,11 +10,10 @@ import (
 )
 
 type CreateTrackRequest struct {
-	AlbumID      uint64           `json:"album_id"`
-	TrackNumber  int              `json:"track_number"`
-	Title        string           `json:"title"`
+	AlbumID      uint64           `json:"album_id" binding:"required"`
+	TrackNumber  int              `json:"track_number" binding:"required"`
+	Title        string           `json:"title" binding:"required"`
 	Duration     int              `json:"duration"`
-	FilePath     string           `json:"file_path"`
 	AudioQuality pkg.AudioQuality `json:"audio_quality"`
 }
 
@@ -37,7 +36,7 @@ func NewTrackHandler(trackService *services.TrackService, fileService *services.
 	}
 }
 
-func (h *TrackHandler) RegisterTrackRoutes(router *gin.Engine) {
+func (h *TrackHandler) RegisterTrackRoutes(router *gin.RouterGroup) {
 	router.POST("/track", h.CreateTrack)
 	router.GET("/track/:id", h.GetTrack)
 	router.PUT("/track/:id", h.UpdateTrack)
@@ -53,7 +52,7 @@ func (h *TrackHandler) CreateTrack(c *gin.Context) {
 	}
 
 	var req CreateTrackRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

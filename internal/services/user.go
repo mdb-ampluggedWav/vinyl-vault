@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"net/mail"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -40,6 +41,11 @@ func NewUserService(userRepository UserRepository) *UserService {
 
 func (u *UserService) Register(ctx context.Context, username, email, password string) (*User, error) {
 
+	// validate email
+	if !isEmailValid(email) {
+		return nil, fmt.Errorf("invalid email")
+	}
+	// validate password length
 	if len(password) < passwordMinLength {
 		return nil, fmt.Errorf("password needs at least 8 characters")
 	}
@@ -99,6 +105,12 @@ func (u *UserService) UpdateEmail(ctx context.Context, id uint64, email string) 
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
+
+	// validate new email
+	if !isEmailValid(email) {
+		return nil, fmt.Errorf("invalid new email")
+	}
+
 	user.Email = email
 
 	if err = u.userRepository.Save(ctx, user); err != nil {
@@ -143,4 +155,10 @@ func (u *UserService) DeleteUser(ctx context.Context, id uint64) error {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 	return nil
+}
+
+func isEmailValid(e string) bool {
+
+	_, err := mail.ParseAddress(e)
+	return err == nil
 }

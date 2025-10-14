@@ -9,9 +9,10 @@ import (
 )
 
 type RegisterRequest struct {
-	Username string `json:"username" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	RegistrationKey string `json:"registration_key" binding:"required"`
+	Username        string `json:"username" binding:"required"`
+	Email           string `json:"email" binding:"required,email"`
+	Password        string `json:"password" binding:"required"`
 }
 
 type LoginRequest struct {
@@ -34,11 +35,13 @@ type ChangePasswordRequest struct {
 
 type UserHandler struct {
 	userService *services.UserService
+	keyService  *services.RegistrationKeyService
 }
 
-func NewUserHandler(userService *services.UserService) *UserHandler {
+func NewUserHandler(userService *services.UserService, keyService *services.RegistrationKeyService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
+		keyService:  keyService,
 	}
 }
 
@@ -63,9 +66,27 @@ func (h *UserHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// validation clé
+	regKey, err := h.keyService.ValidateKey(c.Request.Context(), req.RegistrationKey)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// creer user
 	user, err := h.userService.Register(c.Request.Context(), req.Username, req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// TODO: fix pour prod
+	if err = h.keyService.MarkKeyAsUsed(c.Request.Context(), regKey.Key, user.ID); err != nil {
+		c.JSON(http.StatusCreated, gin.H{
+			"user":    user,
+			"warning": "Registration successful but failed to mark key as used",
+		})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"user": user})

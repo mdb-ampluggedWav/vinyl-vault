@@ -36,7 +36,7 @@ func (r *GormTrackRepository) FindByID(ctx context.Context, id uint64) (*service
 func (r *GormTrackRepository) FindByAlbumID(ctx context.Context, albumID uint64) ([]*services.Track, error) {
 	var tracks []*services.Track
 
-	result := r.db.WithContext(ctx).Where("album_id = ?", albumID).Find(&tracks)
+	result := r.db.WithContext(ctx).Where("album_id = ?", albumID).Order("track_number ASC").Find(&tracks)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to find tracks: %w", result.Error)
 	}

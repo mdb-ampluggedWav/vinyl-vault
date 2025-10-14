@@ -31,7 +31,7 @@ func NewAlbumHandler(albumService *services.AlbumService, fileService *services.
 	}
 }
 
-func (h *AlbumHandler) RegisterAlbumRoutes(router *gin.Engine) {
+func (h *AlbumHandler) RegisterAlbumRoutes(router *gin.RouterGroup) {
 	router.POST("/album", h.CreateAlbum)
 	router.GET("/album/:id", h.GetAlbum)
 	router.GET("/albums/me", h.GetMyAlbums)
@@ -53,26 +53,30 @@ func (h *AlbumHandler) CreateAlbum(c *gin.Context) {
 		return
 	}
 
-	// Handle optional cover art upload
-	coverFile, err := c.FormFile("cover_art")
-	if err == nil {
-		// Cover art provided, save it
-		result, err := h.fileService.SaveCoverArt(coverFile, 0) // Temporary albumID
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		req.Metadata.CoverArtPath = result.Path
-	}
-
+	// create album first without coverart
 	album, err := h.albumService.CreateAlbum(c.Request.Context(), userID.(uint64), req.Metadata)
 	if err != nil {
-		// Cleanup cover art if album creation fails
-		if req.Metadata.CoverArtPath != "" {
-			h.fileService.DeleteCoverArt(req.Metadata.CoverArtPath)
-		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// then handle coverart, if provided
+	coverFile, err := c.FormFile("cover_art")
+	if err == nil {
+		result, err := h.fileService.SaveCoverArt(coverFile, album.ID)
+		if err != nil {
+			c.JSON(http.StatusCreated, gin.H{
+				"album":   album,
+				"warning": "Album created but cover art failed",
+			})
+			return
+		}
+
+		req.Metadata.CoverArtPath = result.Path
+		album, err = h.albumService.UpdateAlbumInfo(c.Request.Context(), userID.(uint64), album.ID, req.Metadata)
+		if err != nil {
+			h.fileService.DeleteCoverArt(result.Path)
+		}
 	}
 
 	c.JSON(http.StatusCreated, album)
@@ -111,7 +115,7 @@ func (h *AlbumHandler) GetMyAlbums(c *gin.Context) {
 
 // DownloadAlbum creates a zip of all tracks and returns it
 func (h *AlbumHandler) DownloadAlbum(c *gin.Context) {
-	userID, exists := c.Get("user_id")
+	_, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
 		return
@@ -127,12 +131,6 @@ func (h *AlbumHandler) DownloadAlbum(c *gin.Context) {
 	album, err := h.albumService.GetAlbum(c.Request.Context(), uint64(albumID))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "album not found"})
-		return
-	}
-
-	// Verify ownership or make public later
-	if album.UserID != userID.(uint64) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
 		return
 	}
 

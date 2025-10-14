@@ -23,7 +23,7 @@ func (r *GormAlbumRepository) FindByUserID(ctx context.Context, userID uint64) (
 
 	var albums []*services.Album
 
-	if result := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&albums); result.Error != nil {
+	if result := r.db.WithContext(ctx).Preload("Tracks").Where("user_id = ?", userID).Find(&albums); result.Error != nil {
 		return nil, fmt.Errorf("failed to find albums: %w", result.Error)
 	}
 	return albums, nil
@@ -32,7 +32,7 @@ func (r *GormAlbumRepository) FindByUserID(ctx context.Context, userID uint64) (
 func (r *GormAlbumRepository) FindByID(ctx context.Context, id uint64) (*services.Album, error) {
 	var album services.Album
 
-	result := r.db.WithContext(ctx).First(&album, id)
+	result := r.db.WithContext(ctx).Preload("Tracks").First(&album, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("album with id %d not found", id)
