@@ -27,11 +27,13 @@ type UpdateTrackRequest struct {
 
 type TrackHandler struct {
 	trackService *services.TrackService
+	fileService  *services.FileService
 }
 
-func NewTrackHandler(trackService *services.TrackService) *TrackHandler {
+func NewTrackHandler(trackService *services.TrackService, fileService *services.FileService) *TrackHandler {
 	return &TrackHandler{
 		trackService: trackService,
+		fileService:  fileService,
 	}
 }
 
@@ -56,10 +58,33 @@ func (h *TrackHandler) CreateTrack(c *gin.Context) {
 		return
 	}
 
+	// get uploaded audio file
+	file, err := c.FormFile("audio_file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "audio file required"})
+		return
+	}
+
+	// save audio file
+	result, err := h.fileService.SaveTrackAudioFile(file, req.AlbumID, req.TrackNumber, req.Title)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	track, err := h.trackService.CreateTrack(
-		c.Request.Context(), userID.(uint64), req.AlbumID, req.TrackNumber, req.Title, req.Duration, req.FilePath, req.AudioQuality,
+		c.Request.Context(),
+		userID.(uint64),
+		req.AlbumID,
+		req.TrackNumber,
+		req.Title,
+		req.Duration,
+		result.Path,
+		req.AudioQuality,
 	)
 	if err != nil {
+		// cleanup file if track creation fails
+		h.fileService.DeleteAudioFile(result.Path)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -72,12 +97,28 @@ func (h *TrackHandler) GetTrack(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
+
 	track, err := h.trackService.GetTrack(c.Request.Context(), uint64(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, track)
+}
+
+func (h *TrackHandler) GetAlbumTracks(c *gin.Context) {
+	albumID, err := strconv.ParseInt(c.Param("album_id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid album id"})
+		return
+	}
+
+	tracks, err := h.trackService.GetTracksByAlbum(c.Request.Context(), uint64(albumID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, tracks)
 }
 
 func (h *TrackHandler) UpdateTrack(c *gin.Context) {
@@ -101,7 +142,13 @@ func (h *TrackHandler) UpdateTrack(c *gin.Context) {
 	}
 
 	track, err := h.trackService.UpdateTrack(
-		c.Request.Context(), userID.(uint64), uint64(id), req.TrackNumber, req.Title, req.Duration, req.AudioQuality,
+		c.Request.Context(),
+		userID.(uint64),
+		uint64(id),
+		req.TrackNumber,
+		req.Title,
+		req.Duration,
+		req.AudioQuality,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

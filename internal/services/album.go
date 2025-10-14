@@ -26,11 +26,13 @@ type AlbumRepository interface {
 
 type AlbumService struct {
 	albumRepository AlbumRepository
+	fileService     *FileService
 }
 
-func NewAlbumService(albumRepository AlbumRepository) *AlbumService {
+func NewAlbumService(albumRepository AlbumRepository, fileService *FileService) *AlbumService {
 	return &AlbumService{
 		albumRepository: albumRepository,
+		fileService:     fileService,
 	}
 }
 
@@ -90,6 +92,13 @@ func (a *AlbumService) UpdateAlbumInfo(ctx context.Context, userID, albumID uint
 		return nil, fmt.Errorf("unauthorized: you don't own this album")
 	}
 
+	// If updating cover art, delete old one
+	if metadata.CoverArtPath != "" && metadata.CoverArtPath != album.Metadata.CoverArtPath {
+		if album.Metadata.CoverArtPath != "" {
+			a.fileService.DeleteCoverArt(album.Metadata.CoverArtPath)
+		}
+	}
+
 	album.Metadata = metadata
 
 	if err = a.albumRepository.Save(ctx, album); err != nil {
@@ -107,6 +116,10 @@ func (a *AlbumService) DeleteAlbum(ctx context.Context, userID, albumID uint64) 
 
 	if album.UserID != userID {
 		return fmt.Errorf("unauthorized: you don't own this album")
+	}
+
+	if album.Metadata.CoverArtPath != "" {
+		a.fileService.DeleteCoverArt(album.Metadata.CoverArtPath)
 	}
 
 	if err = a.albumRepository.Delete(ctx, albumID); err != nil {

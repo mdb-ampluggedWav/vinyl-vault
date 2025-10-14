@@ -30,15 +30,18 @@ type TrackRepository interface {
 type TrackService struct {
 	trackRepository TrackRepository
 	albumRepository AlbumRepository
+	fileService     *FileService
 }
 
-func NewTrackService(trackRepository TrackRepository, albumRepository AlbumRepository) *TrackService {
+func NewTrackService(trackRepository TrackRepository, albumRepository AlbumRepository, fileService *FileService) *TrackService {
 	return &TrackService{
 		trackRepository: trackRepository,
 		albumRepository: albumRepository,
+		fileService:     fileService,
 	}
 }
 
+// CreateTrack just saves metadata -> file handling is in handler
 func (t *TrackService) CreateTrack(
 	ctx context.Context, userID, albumID uint64, trackNumber int, title string,
 	duration int, filePath string, audioQuality pkg.AudioQuality) (*Track, error) {
@@ -59,7 +62,7 @@ func (t *TrackService) CreateTrack(
 		FilePath:     filePath,
 		AudioQuality: audioQuality,
 	}
-	if err := t.trackRepository.Save(ctx, track); err != nil {
+	if err = t.trackRepository.Save(ctx, track); err != nil {
 		return nil, fmt.Errorf("failed to create track: %w", err)
 	}
 	return track, nil
@@ -122,7 +125,6 @@ func (t *TrackService) UpdateTrack(
 }
 
 func (t *TrackService) DeleteTrack(ctx context.Context, userID, trackID uint64) error {
-
 	track, err := t.trackRepository.FindByID(ctx, trackID)
 	if err != nil {
 		return fmt.Errorf("track not found: %w", err)
