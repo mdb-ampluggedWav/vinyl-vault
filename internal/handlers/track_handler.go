@@ -13,7 +13,7 @@ type CreateTrackRequest struct {
 	AlbumID      uint64           `json:"album_id" binding:"required"`
 	TrackNumber  int              `json:"track_number" binding:"required"`
 	Title        string           `json:"title" binding:"required"`
-	Duration     int              `json:"duration"`
+	Duration     pkg.Duration     `json:"duration"`
 	AudioQuality pkg.AudioQuality `json:"audio_quality"`
 }
 
@@ -71,6 +71,14 @@ func (h *TrackHandler) CreateTrack(c *gin.Context) {
 		return
 	}
 
+	// conversion to relative path before storing
+	relativePath, err := h.fileService.GetRelativePath(result.Path)
+	if err != nil {
+		h.fileService.DeleteAudioFile(result.Path)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process file path"})
+		return
+	}
+
 	track, err := h.trackService.CreateTrack(
 		c.Request.Context(),
 		userID.(uint64),
@@ -78,7 +86,7 @@ func (h *TrackHandler) CreateTrack(c *gin.Context) {
 		req.TrackNumber,
 		req.Title,
 		req.Duration,
-		result.Path,
+		relativePath,
 		req.AudioQuality,
 	)
 	if err != nil {

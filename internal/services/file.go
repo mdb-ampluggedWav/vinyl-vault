@@ -340,7 +340,17 @@ func (f *FileService) GetRelativePath(fullPath string) (string, error) {
 		return "", fmt.Errorf("path cannot be empty")
 	}
 
-	rel, err := filepath.Rel(f.uploadDir, fullPath)
+	absFullPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	absUploadDir, err := filepath.Abs(f.uploadDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute upload dir: %w", err)
+	}
+
+	rel, err := filepath.Rel(absUploadDir, absFullPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get relative path: %w", err)
 	}

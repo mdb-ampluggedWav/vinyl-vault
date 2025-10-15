@@ -29,26 +29,28 @@ func AuthRequired() gin.HandlerFunc {
 func AdminRequired(userRepo services.UserRepository) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
-		userID, exists := c.Get("user_id")
-		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
-			c.Abort()
-			return
-		}
+		session := sessions.Default(c)
 
-		user, err := userRepo.FindByID(context.Background(), userID.(uint64))
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
-			c.Abort()
-			return
-		}
+		isAdmin := session.Get("is_admin")
+		if isAdmin == nil {
 
-		if !user.IsAdmin {
-			c.JSON(http.StatusForbidden, gin.H{"error": "admin access required"})
-			c.Abort()
-			return
-		}
+			userID, exists := c.Get("user_id")
+			if !exists {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+				c.Abort()
+				return
+			}
 
+			user, err := userRepo.FindByID(context.Background(), userID.(uint64))
+			if err != nil || !user.IsAdmin {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+				c.Abort()
+				return
+			}
+
+			session.Set("is_admin", true)
+			session.Save()
+		}
 		c.Next()
 	}
 }

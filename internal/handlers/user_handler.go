@@ -107,6 +107,8 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	session := sessions.Default(c)
 	session.Set("user_id", user.ID)
+	session.Set("is_admin", user.IsAdmin)
+
 	if err = session.Save(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
 		return

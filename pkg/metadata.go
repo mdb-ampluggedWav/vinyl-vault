@@ -25,6 +25,18 @@ func (d Duration) ToTime() time.Duration {
 func (d Duration) String() string {
 	dur := d.ToTime()
 	minutes := int(dur.Minutes())
-	seconds := int(dur.Seconds())
+	seconds := int(dur.Seconds()) % 60
+	return fmt.Sprintf("%d:%02d", minutes, seconds)
+}
+
+func (d Duration) StringLong() string {
+	dur := d.ToTime()
+	hours := int(dur.Hours())
+	minutes := int(dur.Minutes()) % 60
+	seconds := int(dur.Seconds()) % 60
+
+	if hours > 0 {
+		return fmt.Sprintf("%d:%02d:%02d", hours, minutes, seconds)
+	}
 	return fmt.Sprintf("%d:%02d", minutes, seconds)
 }

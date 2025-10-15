@@ -13,7 +13,7 @@ type Track struct {
 	AlbumID      uint64           `json:"album_id" gorm:"not null"`
 	TrackNumber  int              `json:"track_number" gorm:"not null"`
 	Title        string           `json:"title" gorm:"not null"`
-	Duration     int              `json:"duration"`
+	Duration     pkg.Duration     `json:"duration"`
 	FilePath     string           `json:"file_path" gorm:"not null"`
 	AudioQuality pkg.AudioQuality `json:"audio_quality" gorm:"embedded;embeddedPrefix:audio_"`
 	CreatedAt    time.Time        `json:"created_at"`
@@ -44,7 +44,7 @@ func NewTrackService(trackRepository TrackRepository, albumRepository AlbumRepos
 // CreateTrack just saves metadata -> file handling is in handler
 func (t *TrackService) CreateTrack(
 	ctx context.Context, userID, albumID uint64, trackNumber int, title string,
-	duration int, filePath string, audioQuality pkg.AudioQuality) (*Track, error) {
+	duration pkg.Duration, filePath string, audioQuality pkg.AudioQuality) (*Track, error) {
 
 	album, err := t.albumRepository.FindByID(ctx, albumID)
 	if err != nil {
@@ -112,7 +112,7 @@ func (t *TrackService) UpdateTrack(
 	}
 
 	if duration != nil {
-		track.Duration = *duration
+		track.Duration = pkg.Duration(*duration)
 	}
 	if audioQuality != nil {
 		track.AudioQuality = *audioQuality

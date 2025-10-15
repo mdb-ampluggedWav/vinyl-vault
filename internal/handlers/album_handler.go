@@ -60,7 +60,7 @@ func (h *AlbumHandler) CreateAlbum(c *gin.Context) {
 		return
 	}
 
-	// then handle coverart, if provided
+	// then we handle coverart if provided
 	coverFile, err := c.FormFile("cover_art")
 	if err == nil {
 		result, err := h.fileService.SaveCoverArt(coverFile, album.ID)
@@ -71,8 +71,12 @@ func (h *AlbumHandler) CreateAlbum(c *gin.Context) {
 			})
 			return
 		}
+		relativePath, err := h.fileService.GetRelativePath(result.Path)
+		if err != nil {
+			h.fileService.DeleteCoverArt(result.Path)
+		}
 
-		req.Metadata.CoverArtPath = result.Path
+		req.Metadata.CoverArtPath = relativePath
 		album, err = h.albumService.UpdateAlbumInfo(c.Request.Context(), userID.(uint64), album.ID, req.Metadata)
 		if err != nil {
 			h.fileService.DeleteCoverArt(result.Path)
@@ -137,7 +141,8 @@ func (h *AlbumHandler) DownloadAlbum(c *gin.Context) {
 	// Get all track file paths
 	var trackPaths []string
 	for _, track := range album.Tracks {
-		trackPaths = append(trackPaths, track.FilePath)
+		fullPath := h.fileService.GetFullPath(track.FilePath)
+		trackPaths = append(trackPaths, fullPath)
 	}
 
 	if len(trackPaths) == 0 {
@@ -185,7 +190,15 @@ func (h *AlbumHandler) UpdateAlbum(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		req.Metadata.CoverArtPath = result.Path
+
+		relativePath, err := h.fileService.GetRelativePath(result.Path)
+
+		if err != nil {
+			h.fileService.DeleteCoverArt(result.Path)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process file path"})
+			return
+		}
+		req.Metadata.CoverArtPath = relativePath
 	}
 
 	album, err := h.albumService.UpdateAlbumInfo(c.Request.Context(), userID.(uint64), uint64(id), req.Metadata)

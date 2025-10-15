@@ -37,6 +37,13 @@ func NewAlbumService(albumRepository AlbumRepository, fileService *FileService) 
 }
 
 func (a *AlbumService) CreateAlbum(ctx context.Context, userID uint64, metadata pkg.Metadata) (*Album, error) {
+	if metadata.Artist == "" || metadata.Album == "" {
+		return nil, fmt.Errorf("artist and album are required")
+	}
+	if metadata.Format == "" {
+		return nil, fmt.Errorf("format is required")
+	}
+
 	album := &Album{
 		UserID:   userID,
 		Metadata: metadata,

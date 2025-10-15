@@ -64,20 +64,22 @@ func (h *FileHandler) StreamTrack(c *gin.Context) {
 	_ = userID
 	_ = album
 
-	if !h.fileService.FileExists(track.FilePath) {
+	fullPath := h.fileService.GetFullPath(track.FilePath)
+
+	if !h.fileService.FileExists(fullPath) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "audio file not found"})
 		return
 	}
 
 	// Get file info
-	fileInfo, err := os.Stat(track.FilePath)
+	fileInfo, err := os.Stat(fullPath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to access file"})
 		return
 	}
 
 	// Set headers for streaming
-	c.Header("Content-Type", getContentType(track.FilePath))
+	c.Header("Content-Type", getContentType(fullPath))
 	c.Header("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "no-cache")
@@ -86,12 +88,12 @@ func (h *FileHandler) StreamTrack(c *gin.Context) {
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader != "" {
 		// Serve partial content for range requests
-		c.File(track.FilePath)
+		c.File(fullPath)
 		return
 	}
 
 	// Serve full file
-	c.File(track.FilePath)
+	c.File(fullPath)
 }
 
 func (h *FileHandler) DownloadTrack(c *gin.Context) {
@@ -125,18 +127,20 @@ func (h *FileHandler) DownloadTrack(c *gin.Context) {
 	_ = userID
 	_ = album
 
+	fullPath := h.fileService.GetFullPath(track.FilePath)
+
 	// Verify file exists
-	if !h.fileService.FileExists(track.FilePath) {
+	if !h.fileService.FileExists(fullPath) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "audio file not found"})
 		return
 	}
 
 	// Create a safe filename for download
-	ext := filepath.Ext(track.FilePath)
+	ext := filepath.Ext(fullPath)
 	downloadName := sanitizeFilenames(track.Title) + ext
 
 	// Serve file as attachment
-	c.FileAttachment(track.FilePath, downloadName)
+	c.FileAttachment(fullPath, downloadName)
 }
 
 func (h *FileHandler) ServeCoverArt(c *gin.Context) {
@@ -159,21 +163,23 @@ func (h *FileHandler) ServeCoverArt(c *gin.Context) {
 		return
 	}
 
+	fullCoverArtPath := h.fileService.GetFullPath(album.Metadata.CoverArtPath)
+
 	// Verify file exists
-	if !h.fileService.FileExists(album.Metadata.CoverArtPath) {
+	if !h.fileService.FileExists(fullCoverArtPath) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "cover art file not found"})
 		return
 	}
 
 	// Determine content type
-	contentType := getImageContentType(album.Metadata.CoverArtPath)
+	contentType := getImageContentType(fullCoverArtPath)
 
 	// Set cache headers for images (they don't change often)
 	c.Header("Content-Type", contentType)
 	c.Header("Cache-Control", "public, max-age=86400") // Cache for 1 day
 
 	// Serve the image file
-	c.File(album.Metadata.CoverArtPath)
+	c.File(fullCoverArtPath)
 }
 
 func getContentType(filePath string) string {
