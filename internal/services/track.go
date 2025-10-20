@@ -27,13 +27,17 @@ type TrackRepository interface {
 	Delete(ctx context.Context, id uint64) error
 }
 
+type FileDeleter interface {
+	DeleteAudioFile(filePath string) error
+}
+
 type TrackService struct {
 	trackRepository TrackRepository
 	albumRepository AlbumRepository
-	fileService     *FileService
+	fileService     FileDeleter
 }
 
-func NewTrackService(trackRepository TrackRepository, albumRepository AlbumRepository, fileService *FileService) *TrackService {
+func NewTrackService(trackRepository TrackRepository, albumRepository AlbumRepository, fileService FileDeleter) *TrackService {
 	return &TrackService{
 		trackRepository: trackRepository,
 		albumRepository: albumRepository,
@@ -41,7 +45,7 @@ func NewTrackService(trackRepository TrackRepository, albumRepository AlbumRepos
 	}
 }
 
-// CreateTrack just saves metadata -> file handling is in handler
+// CreateTrack just saves metadata into new track -> file handling is in handler
 func (t *TrackService) CreateTrack(
 	ctx context.Context, userID, albumID uint64, trackNumber int, title string,
 	duration pkg.Duration, filePath string, audioQuality pkg.AudioQuality) (*Track, error) {
