@@ -31,7 +31,6 @@ func (h *RegistrationKeyHandler) RegisterKeyRoutes(router *gin.Engine) {
 	router.POST("/admin/registration-key", h.GenerateKey)
 	router.GET("/admin/registration-keys", h.GetMyKeys)
 	router.DELETE("/admin/registration-key/:id", h.DeleteKey)
-
 	router.POST("/validate-key", h.ValidateKey)
 }
 

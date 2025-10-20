@@ -42,7 +42,7 @@ func main() {
 	email = strings.TrimSpace(email)
 
 	fmt.Print("Enter admin password: ")
-	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
+	passwordBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		log.Fatal("failed to read password")
 	}
@@ -51,7 +51,7 @@ func main() {
 	fmt.Println()
 
 	fmt.Print("Confirm password: ")
-	confirmBytes, err := term.ReadPassword(int(syscall.Stdin))
+	confirmBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		log.Fatal("Failed to read password:", err)
 	}

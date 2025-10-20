@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"vinyl-vault/internal/services"
 	"vinyl-vault/pkg"
 
@@ -74,12 +73,16 @@ func (h *AlbumHandler) CreateAlbum(c *gin.Context) {
 		relativePath, err := h.fileService.GetRelativePath(result.Path)
 		if err != nil {
 			h.fileService.DeleteCoverArt(result.Path)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process file path"})
+			return
 		}
 
 		req.Metadata.CoverArtPath = relativePath
 		album, err = h.albumService.UpdateAlbumInfo(c.Request.Context(), userID.(uint64), album.ID, req.Metadata)
 		if err != nil {
 			h.fileService.DeleteCoverArt(result.Path)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update album"})
+			return
 		}
 	}
 
@@ -151,7 +154,7 @@ func (h *AlbumHandler) DownloadAlbum(c *gin.Context) {
 	}
 
 	// Create zip
-	zipName := fmt.Sprintf("album_%d_%s.zip", albumID, sanitizeFilename(album.Metadata.Album))
+	zipName := fmt.Sprintf("album_%d_%s.zip", albumID, services.SanitizeFilename(album.Metadata.Album))
 	zipPath, err := h.fileService.ArchiveAudioFilesToZip(trackPaths, zipName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create archive"})
@@ -227,18 +230,4 @@ func (h *AlbumHandler) DeleteAlbum(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
-}
-
-func sanitizeFilename(name string) string {
-
-	replacer := strings.NewReplacer(
-		"/", "_", "\\", "_", ":", "_", "*", "_",
-		"?", "_", "\"", "_", "<", "_", ">", "_",
-		"|", "_", " ", "_",
-	)
-	sanitized := replacer.Replace(name)
-	if len(sanitized) > 50 {
-		sanitized = sanitized[:50]
-	}
-	return sanitized
 }

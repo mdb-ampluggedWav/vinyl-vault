@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	maxAudioFileSize = int64(500 << 20) // 500mb
-	maxCoverArtSize  = int64(5 << 20)   //   5mb
-	dirPermissions   = 0755
-	filePermissions  = 0644
-	maxArchiveFiles  = 100
+	maxAudioFileSize = int64(500 << 20) //   500mb
+	maxCoverArtSize  = int64(10 << 20)  //   10mb for flexibility
+
+	dirPermissions  = 0755
+	filePermissions = 0644
+
+	maxArchiveFiles = 100
 )
 
 var (
@@ -28,6 +30,7 @@ var (
 		".alac": true,
 		".mp3":  true,
 		".m4a":  true,
+		".opus": true,
 	}
 	coverArtValidExtensions = map[string]bool{
 		".jpg":  true,
@@ -75,7 +78,7 @@ func (f *FileService) SaveTrackAudioFile(
 	// get OG extension
 	ext := f.GetAudioFileExtension(file.Filename)
 
-	safeTitle := sanitizeFilename(trackTitle)
+	safeTitle := SanitizeFilename(trackTitle)
 	filename := fmt.Sprintf("%d_%02d_%s%s", albumID, trackNumber, safeTitle, ext)
 	destPath := filepath.Join(f.audioDir, filename)
 
@@ -114,7 +117,6 @@ func (f *FileService) SaveTrackAudioFile(
 		Filename: filename,
 		Size:     uint64(file.Size),
 	}, nil
-
 }
 
 func (f *FileService) SaveAudioFile(file *multipart.FileHeader, destPath string) error {
@@ -156,7 +158,6 @@ func (f *FileService) SaveAudioFile(file *multipart.FileHeader, destPath string)
 		return fmt.Errorf("failed to save file: %w", err)
 	}
 	return nil
-
 }
 
 func (f *FileService) DeleteAudioFile(filePath string) error {
@@ -318,7 +319,6 @@ func (f *FileService) SaveCoverArt(file *multipart.FileHeader, albumID uint64) (
 		Filename: filename,
 		Size:     uint64(file.Size),
 	}, nil
-
 }
 
 func (f *FileService) DeleteCoverArt(filePath string) error {
@@ -438,7 +438,7 @@ func generateRandomString(length int) string {
 	return hex.EncodeToString(bytes)
 }
 
-func sanitizeFilename(name string) string {
+func SanitizeFilename(name string) string {
 	replacer := strings.NewReplacer(
 		"/", "_",
 		"\\", "_",
@@ -453,9 +453,12 @@ func sanitizeFilename(name string) string {
 	)
 	sanitized := replacer.Replace(name)
 
-	maxLen := 100
+	const maxLen = 100
 	if len(sanitized) > maxLen {
-		sanitized = sanitized[:maxLen]
+		runes := []rune(sanitized)
+		if len(runes) > maxLen {
+			sanitized = string(runes[:maxLen])
+		}
 	}
 	return sanitized
 }

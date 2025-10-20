@@ -88,6 +88,7 @@ func (a *AlbumService) IsOwner(ctx context.Context, albumID, userID uint64) (boo
 	return album.UserID == userID, nil
 }
 
+// UpdateAlbumInfo updates album's metadata and coverart if present
 func (a *AlbumService) UpdateAlbumInfo(ctx context.Context, userID, albumID uint64, metadata pkg.Metadata) (*Album, error) {
 
 	album, err := a.albumRepository.FindByID(ctx, albumID)
@@ -105,7 +106,6 @@ func (a *AlbumService) UpdateAlbumInfo(ctx context.Context, userID, albumID uint
 			a.fileService.DeleteCoverArt(album.Metadata.CoverArtPath)
 		}
 	}
-
 	album.Metadata = metadata
 
 	if err = a.albumRepository.Save(ctx, album); err != nil {

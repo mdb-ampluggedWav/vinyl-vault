@@ -54,7 +54,7 @@ func (h *FileHandler) StreamTrack(c *gin.Context) {
 		return
 	}
 
-	// Get album to verify access
+	// Get album
 	album, err := h.albumService.GetAlbum(c.Request.Context(), track.AlbumID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "album not found"})
@@ -137,7 +137,7 @@ func (h *FileHandler) DownloadTrack(c *gin.Context) {
 
 	// Create a safe filename for download
 	ext := filepath.Ext(fullPath)
-	downloadName := sanitizeFilenames(track.Title) + ext
+	downloadName := services.SanitizeFilename(track.Title) + ext
 
 	// Serve file as attachment
 	c.FileAttachment(fullPath, downloadName)
@@ -214,33 +214,4 @@ func getImageContentType(filePath string) string {
 	default:
 		return "application/octet-stream"
 	}
-}
-
-func sanitizeFilenames(name string) string {
-
-	replacer := map[rune]rune{
-		'/':  '_',
-		'\\': '_',
-		':':  '_',
-		'*':  '_',
-		'?':  '_',
-		'"':  '_',
-		'<':  '_',
-		'>':  '_',
-		'|':  '_',
-	}
-
-	runes := []rune(name)
-	for i, r := range runes {
-		if replacement, ok := replacer[r]; ok {
-			runes[i] = replacement
-		}
-	}
-
-	result := string(runes)
-	if len(result) > 100 {
-		result = result[:100]
-	}
-
-	return result
 }

@@ -45,7 +45,7 @@ func NewTrackService(trackRepository TrackRepository, albumRepository AlbumRepos
 	}
 }
 
-// CreateTrack just saves metadata into new track -> file handling is in handler
+// CreateTrack just saves metadata into new track
 func (t *TrackService) CreateTrack(
 	ctx context.Context, userID, albumID uint64, trackNumber int, title string,
 	duration pkg.Duration, filePath string, audioQuality pkg.AudioQuality) (*Track, error) {
@@ -81,6 +81,7 @@ func (t *TrackService) GetTrack(ctx context.Context, id uint64) (*Track, error) 
 	return track, nil
 }
 
+// GetTracksByAlbum searches all tracks from a specific album
 func (t *TrackService) GetTracksByAlbum(ctx context.Context, albumID uint64) ([]*Track, error) {
 	tracks, err := t.trackRepository.FindByAlbumID(ctx, albumID)
 	if err != nil {
@@ -110,11 +111,9 @@ func (t *TrackService) UpdateTrack(
 	if trackNumber != nil {
 		track.TrackNumber = *trackNumber
 	}
-
 	if title != nil {
 		track.Title = *title
 	}
-
 	if duration != nil {
 		track.Duration = pkg.Duration(*duration)
 	}

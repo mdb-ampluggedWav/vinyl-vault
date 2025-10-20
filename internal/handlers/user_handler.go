@@ -67,21 +67,22 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// validation clé
+	// key validation
 	regKey, err := h.keyService.ValidateKey(c.Request.Context(), req.RegistrationKey)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// creer user
+	// create user
 	user, err := h.userService.Register(c.Request.Context(), req.Username, req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// TODO: fix pour prod
+	// TODO: fix for prod
+	// mark key as used, obsolete for anyone else
 	if err = h.keyService.MarkKeyAsUsed(c.Request.Context(), regKey.Key, user.ID); err != nil {
 		c.JSON(http.StatusCreated, gin.H{
 			"user":    user,
